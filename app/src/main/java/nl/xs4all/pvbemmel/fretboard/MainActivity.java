@@ -16,7 +16,8 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+        implements ScalesDialogFragment.ScaleSelectionListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     public static final String SCALE_SELECTIONS_KEY = "scaleSelectionsKey";
     private FretboardView fretboardView;
@@ -50,6 +51,24 @@ public class MainActivity extends AppCompatActivity {
 
         oel = new MyOrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL);
     }
+
+    @Override
+    public void handleScaleSelections(TreeMap<String, Boolean> scaleSelections) {
+        if (scaleSelections != null) {
+            this.scaleSelections.clear();
+            for (Map.Entry<String, Boolean> entry : scaleSelections.entrySet()) {
+                this.scaleSelections.put(entry.getKey(), entry.getValue());
+            }
+            fretboardView.removeScales();
+            for(Scale scale : Scale.getScales()) {
+                if(scaleSelections.get(scale.getName())) {
+                    fretboardView.addScale(scale);
+                }
+            }
+            fretboardView.invalidate();
+        }
+    }
+
     private class MyOrientationEventListener extends OrientationEventListener {
         int orientationRounded = -1;
 
@@ -119,19 +138,6 @@ public class MainActivity extends AppCompatActivity {
             case R.id.scales_id:
                 ScalesDialogFragment sdf = ScalesDialogFragment.newInstance(scaleSelections);
                 sdf.show(getSupportFragmentManager(), "scalesDialogTag");
-                TreeMap<String,Boolean> result = sdf.getSelections();
-                if (result != null) {
-                    for (Map.Entry<String, Boolean> entry : result.entrySet()) {
-                        scaleSelections.put(entry.getKey(), entry.getValue());
-                    }
-                    fretboardView.removeScales();
-                    for(Scale scale : Scale.getScales()) {
-                        if(scaleSelections.get(scale.getName())) {
-                            fretboardView.addScale(scale);
-                        }
-                    }
-                    fretboardView.invalidate();
-                }
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

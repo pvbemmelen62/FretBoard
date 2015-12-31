@@ -12,21 +12,34 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Created by Paul on 12/14/2015.
+ * Allow user to select the scales whose notes to display, and return result to the
+ * containing activity through interface ScaleSelectionListener.
  */
 public class ScalesDialogFragment extends DialogFragment {
+
+    public interface ScaleSelectionListener {
+        public void handleScaleSelections(TreeMap<String,Boolean> scaleSelections);
+    }
     private static final String TAG = ScalesDialogFragment.class.getSimpleName();
 
     private ArrayList mSelectedItems;
     private TreeMap<String,Boolean> scaleSelections;
 
+    /**
+     * Creates ScalesDialogFragment object.
+     * @param scaleSelections Specifies which scales are selected; internally a copy of this
+     *                        parameter is stored, so that the client and this ScalesDialogFragment
+     *                        object hold separate instances.
+     * @return
+     */
     public static ScalesDialogFragment newInstance(
         TreeMap<String,Boolean> scaleSelections) {
 
         ScalesDialogFragment sdf = new ScalesDialogFragment();
 
+        TreeMap<String,Boolean> copy = new TreeMap<String,Boolean>(scaleSelections);
         Bundle bundle = new Bundle();
-        bundle.putSerializable(MainActivity.SCALE_SELECTIONS_KEY, scaleSelections);
+        bundle.putSerializable(MainActivity.SCALE_SELECTIONS_KEY, copy);
         sdf.setArguments(bundle);
 
         return sdf;
@@ -35,12 +48,21 @@ public class ScalesDialogFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         Log.i(TAG, "onCreateDialog(" + savedInstanceState + ")");
         // http://developer.android.com/guide/topics/ui/dialogs.html
-
-        scaleSelections = (TreeMap<String,Boolean>)getArguments().
-            getSerializable(MainActivity.SCALE_SELECTIONS_KEY);
-//        scaleSelections = (TreeMap<String,Boolean>)savedInstanceState.getSerializable(
-//            MainActivity.SCALE_SELECTIONS_KEY);
-
+        Bundle args = getArguments();
+        Log.i(TAG, "getArguments(): " + args);
+        Bundle bundle = args==null ? savedInstanceState : args;
+        if(bundle!=null) {
+            scaleSelections = (TreeMap<String, Boolean>)bundle.
+                getSerializable(MainActivity.SCALE_SELECTIONS_KEY);
+        }
+        if(scaleSelections==null) {
+            // When will this happen? Throw exception that gives some info:
+            String nl = System.getProperty("line.separator");
+            String msg = TAG + ": onCreateDialog(" + savedInstanceState + "):" + nl
+                + "getArguments(): " + args + nl
+                + "scaleSelections: " + scaleSelections;
+            throw new IllegalStateException(msg);
+        }
         ArrayList<String> namesAL = new ArrayList<String>();
         ArrayList<Boolean> boolAL = new ArrayList<Boolean>();
         for(Map.Entry<String,Boolean> entry : scaleSelections.entrySet()) {
@@ -73,25 +95,24 @@ public class ScalesDialogFragment extends DialogFragment {
                     for(Map.Entry<String,Boolean> entry : pendingScaleSelections.entrySet()) {
                         scaleSelections.put(entry.getKey(), entry.getValue());
                     }
+                    ScaleSelectionListener ssl = (ScaleSelectionListener)getActivity();
+                    ssl.handleScaleSelections(scaleSelections);
                 }
             })
             .setNegativeButton(R.string.scales_select_cancel, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int id) {
-                    scaleSelections = null;
+                    // noop
                 }
             });
 
         return builder.create();
     }
 
-    /**
-     * Returns map with name of scale, and boolean that tells whether the scale is
-     * selected.
-     * @return null if the dialog was cancelled.
-     */
-    public TreeMap<String,Boolean> getSelections() {
-        Log.i(TAG, "getSelections() returns " + scaleSelections);
-        return scaleSelections;
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        Log.i(TAG, "onSaveInstanceState(" + outState + ")");
+        super.onSaveInstanceState(outState);
+        outState.putSerializable(MainActivity.SCALE_SELECTIONS_KEY, scaleSelections);
     }
 }
