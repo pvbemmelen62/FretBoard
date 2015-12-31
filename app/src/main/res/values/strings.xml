@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">FretBoard</string>
+    <string name="settings_title">Settings</string>
+    <string name="scales_title">Scales</string>
+    <string name="scales_dialog_title">Scales</string>
+    <string name="scales_dialog_ok">OK</string>
+    <string name="select_scales_title">Select scales</string>
+    <string name="scales_select_ok">OK</string>
+    <string name="scales_select_cancel">Cancel</string>
+</resources>
