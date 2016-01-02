@@ -70,7 +70,13 @@ public class MainActivity extends AppCompatActivity
     }
 
     private class MyOrientationEventListener extends OrientationEventListener {
-        int orientationRounded = -1;
+        /**
+         * 0 : for orientation in [0,45)  or in [315,360)
+         * 1 : for orientation in [45,135)
+         * 2 : for orientation in [135,225)
+         * 3 : for orientation in [225,315)
+         */
+        int orientationRounded = OrientationEventListener.ORIENTATION_UNKNOWN;
 
         public MyOrientationEventListener(Context context, int rate) {
             super(context, rate);
@@ -81,7 +87,7 @@ public class MainActivity extends AppCompatActivity
 //                  "Orientation changed to " + orientation);
             validateIsOnUIThread();
                 /* Orientation Rounded New */
-            int orNew=-1;
+            int orNew = OrientationEventListener.ORIENTATION_UNKNOWN;
             if(orientation<0) {
                 // indeterminate orientation: do nothing.
             }
@@ -105,7 +111,7 @@ public class MainActivity extends AppCompatActivity
                 orientationRounded = orNew;
                 Log.i(TAG,
                     "orientationRounded: " + orOld + " -> " + orientationRounded);
-                fretboardView.invalidate();
+                fretboardView.setOrientationRounded(orientationRounded);
             }
         }
     }

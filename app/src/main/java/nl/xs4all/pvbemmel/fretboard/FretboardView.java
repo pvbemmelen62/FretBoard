@@ -11,6 +11,7 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.OrientationEventListener;
 import android.view.View;
 
 import java.util.ArrayList;
@@ -40,6 +41,10 @@ public class FretboardView extends View {
     private Matrix matrix;
     private int drawCount;
     private Paint countPaint;
+    /**
+     * See MainActivity.MyOrientationEventListener.orientationRounded .
+     */
+    private int orientationRounded;
 
     public FretboardView(Context context) {
         super(context);
@@ -66,6 +71,7 @@ public class FretboardView extends View {
         countPaint.setColor(Color.BLACK);
         countPaint.setTypeface(Typeface.SANS_SERIF);
         countPaint.setTextSize(20);
+        orientationRounded = OrientationEventListener.ORIENTATION_UNKNOWN;
     }
     public void addScale(Scale scale) {
         Log.i(TAG, "addScale(" + scale + ")");
@@ -218,6 +224,15 @@ public class FretboardView extends View {
     private void drawCount(Canvas canvas) {
         canvas.drawText(""+drawCount, 100,100, countPaint);
     }
+
+    public void setOrientationRounded(int orientationRounded) {
+        if(this.orientationRounded == orientationRounded) {
+            return;
+        }
+        this.orientationRounded = orientationRounded;
+        invalidate();
+    }
+
     class Position implements Comparable<Position> {
         public float string;
         public float fret;
@@ -349,7 +364,12 @@ public class FretboardView extends View {
             }
             paint.setColor(color);
             canvas.drawOval(new RectF(left, top, right, bottom), paint);
-            drawCenter(canvas, paintText, note.getLocalName(), x, y);
+
+            float degrees = -90 * orientationRounded;
+            canvas.save();
+            canvas.rotate(degrees, x, y);
+            drawCentered(canvas, paintText, note.getLocalName(), x, y);
+            canvas.restore();
             //canvas.drawText(note.getLocalName(), left, bottom, paintText);
         }
     }
@@ -362,7 +382,7 @@ public class FretboardView extends View {
      * @param cx
      * @param cy
      */
-    private void drawCenter(Canvas canvas, Paint paint, String text, float cx, float cy) {
+    private void drawCentered(Canvas canvas, Paint paint, String text, float cx, float cy) {
         // http://stackoverflow.com/questions/11120392/android-center-text-on-canvas
         Rect r = new Rect();
         Paint.Align pa = paint.getTextAlign();
