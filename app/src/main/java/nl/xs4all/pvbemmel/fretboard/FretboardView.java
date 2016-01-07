@@ -220,9 +220,14 @@ public class FretboardView extends View {
 
         ++drawCount;
         drawCount(canvas);
+
+        drawOrientationRounded(canvas);
     }
     private void drawCount(Canvas canvas) {
         canvas.drawText(""+drawCount, 100,100, countPaint);
+    }
+    private void drawOrientationRounded(Canvas canvas) {
+        canvas.drawText(""+orientationRounded, 300,100, countPaint);
     }
 
     public void setOrientationRounded(int orientationRounded) {
