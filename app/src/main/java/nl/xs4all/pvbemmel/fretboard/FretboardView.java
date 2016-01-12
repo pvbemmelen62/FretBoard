@@ -41,6 +41,8 @@ public class FretboardView extends View {
     private Matrix matrix;
     private int drawCount;
     private Paint countPaint;
+
+    private int fontRotationCorrection;
     /**
      * See MainActivity.MyOrientationEventListener.orientationRounded .
      */
@@ -72,6 +74,15 @@ public class FretboardView extends View {
         countPaint.setTypeface(Typeface.SANS_SERIF);
         countPaint.setTextSize(20);
         orientationRounded = OrientationEventListener.ORIENTATION_UNKNOWN;
+        fontRotationCorrection = 0;
+    }
+    public int getFontRotationCorrection() {
+        Log.i(TAG, "getFontRotationCorrection() will return " + fontRotationCorrection);
+        return fontRotationCorrection;
+    }
+    public void setFontRotationCorrection(int fontRotationCorrection) {
+        Log.i(TAG, "setFontRotationCorrection(" + fontRotationCorrection + ")");
+        this.fontRotationCorrection = fontRotationCorrection;
     }
     public void addScale(Scale scale) {
         Log.i(TAG, "addScale(" + scale + ")");
@@ -372,8 +383,8 @@ public class FretboardView extends View {
 
             float degrees = -90 * orientationRounded;
             canvas.save();
-            canvas.rotate(degrees, x, y);
-            drawCentered(canvas, paintText, note.getLocalName(), x, y);
+            canvas.rotate(degrees+fontRotationCorrection, x, y);
+            drawCenteredText(canvas, paintText, note.getLocalName(), x, y);
             canvas.restore();
             //canvas.drawText(note.getLocalName(), left, bottom, paintText);
         }
@@ -387,7 +398,7 @@ public class FretboardView extends View {
      * @param cx
      * @param cy
      */
-    private void drawCentered(Canvas canvas, Paint paint, String text, float cx, float cy) {
+    private void drawCenteredText(Canvas canvas, Paint paint, String text, float cx, float cy) {
         // http://stackoverflow.com/questions/11120392/android-center-text-on-canvas
         Rect r = new Rect();
         Paint.Align pa = paint.getTextAlign();

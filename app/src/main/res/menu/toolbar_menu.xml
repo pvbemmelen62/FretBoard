@@ -11,6 +11,10 @@
             android:id="@+id/scales_id"
             android:title="@string/scales_title"
             />
+        <item
+            android:id="@+id/font_rotation_correction_id"
+            android:title="@string/font_rotation_correction_title"
+            />
     </menu>
 </item>
 </menu>

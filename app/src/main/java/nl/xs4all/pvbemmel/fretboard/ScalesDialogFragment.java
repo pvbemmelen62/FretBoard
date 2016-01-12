@@ -22,7 +22,6 @@ public class ScalesDialogFragment extends DialogFragment {
     }
     private static final String TAG = ScalesDialogFragment.class.getSimpleName();
 
-    private ArrayList mSelectedItems;
     private TreeMap<String,Boolean> scaleSelections;
 
     /**

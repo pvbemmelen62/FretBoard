@@ -7,4 +7,5 @@
     <string name="select_scales_title">Select scales</string>
     <string name="scales_select_ok">OK</string>
     <string name="scales_select_cancel">Cancel</string>
+    <string name="font_rotation_correction_title">Font rotation correction</string>
 </resources>

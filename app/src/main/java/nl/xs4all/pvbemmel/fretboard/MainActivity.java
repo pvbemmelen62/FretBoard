@@ -1,6 +1,7 @@
 package nl.xs4all.pvbemmel.fretboard;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Looper;
@@ -14,21 +15,41 @@ import android.view.OrientationEventListener;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 public class MainActivity extends AppCompatActivity
-        implements ScalesDialogFragment.ScaleSelectionListener {
+        implements ScalesDialogFragment.ScaleSelectionListener,
+    FontRotationCorrectionDialogFragment.FontRotationListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     public static final String SCALE_SELECTIONS_KEY = "scaleSelectionsKey";
+    public static final String FONT_ROTATION_CORRECTION_KEY = "fontRotationCorrectionKey";
     private FretboardView fretboardView;
     private OrientationEventListener oel;
     private TreeMap<String,Boolean> scaleSelections;
+    /** For storing in SharedPreferences */
+    private Set<String> scaleSelectionNames;
+    private Integer fontRotationCorrection;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "onCreate(" + savedInstanceState + ")");
         super.onCreate(savedInstanceState);
+
+        SharedPreferences sharedPrefs = getPreferences(Context.MODE_PRIVATE);
+
         scaleSelections = null;
+        // You can't save TreeMap<String,Boolean> in SharedPreferences.
+        // So instead, save the strings for which the boolean is true.
+        scaleSelectionNames = sharedPrefs.getStringSet(SCALE_SELECTIONS_KEY, null);
+        if(scaleSelectionNames!=null) {
+            scaleSelections = new TreeMap<String,Boolean>();
+            for(Scale scale : Scale.getScales()) {
+                String scaleName = scale.getName();
+                scaleSelections.put(scaleName, scaleSelectionNames.contains(scaleName));
+            }
+        }
         if(savedInstanceState!=null) {
             Bundle bundle = savedInstanceState;
             Serializable ser = bundle.getSerializable(SCALE_SELECTIONS_KEY);
@@ -42,10 +63,25 @@ public class MainActivity extends AppCompatActivity
                 scaleSelections.put(scale.getName(), Boolean.TRUE);
             }
         }
+
+        fontRotationCorrection = 0;
+        int fontRotationCorrectionPref = sharedPrefs.getInt(FONT_ROTATION_CORRECTION_KEY, -1);
+        Log.i(TAG, "SharedPreferences getInt("+FONT_ROTATION_CORRECTION_KEY + ", -1) returns "
+            + fontRotationCorrectionPref);
+        if(fontRotationCorrectionPref != -1) {
+            fontRotationCorrection = fontRotationCorrectionPref;
+        }
+        if(savedInstanceState!=null) {
+            fontRotationCorrection = savedInstanceState.getInt(FONT_ROTATION_CORRECTION_KEY,
+                fontRotationCorrection);
+        }
         setContentView(R.layout.activity_main);
+
         fretboardView = (FretboardView)findViewById(R.id.fretboard);
         fretboardView.removeScales();
         fretboardView.addScales(scaleSelections);
+        fretboardView.setFontRotationCorrection(fontRotationCorrection);
+
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
 
@@ -68,7 +104,16 @@ public class MainActivity extends AppCompatActivity
             fretboardView.invalidate();
         }
     }
-
+    @Override
+    public void handleFontRotationCorrection(int fontRotationCorrection) {
+        Log.i(TAG, "handleFontRotationCorrection(" + fontRotationCorrection + ")");
+        if(fontRotationCorrection==fretboardView.getFontRotationCorrection()) {
+            return;
+        }
+        this.fontRotationCorrection = fontRotationCorrection;
+        fretboardView.setFontRotationCorrection(fontRotationCorrection);
+        fretboardView.invalidate();
+    }
     private class MyOrientationEventListener extends OrientationEventListener {
         /**
          * 0 : for orientation in [0,45)  or in [315,360)
@@ -90,6 +135,7 @@ public class MainActivity extends AppCompatActivity
             int orNew = OrientationEventListener.ORIENTATION_UNKNOWN;
             if(orientation<0) {
                 // indeterminate orientation: do nothing.
+                return;
             }
             else if(orientation<0+45) {
                 orNew = 0;
@@ -121,6 +167,7 @@ public class MainActivity extends AppCompatActivity
         super.onSaveInstanceState(outState);
         Bundle bundle = new Bundle();
         bundle.putSerializable(SCALE_SELECTIONS_KEY, scaleSelections);
+        bundle.putInt(FONT_ROTATION_CORRECTION_KEY, fontRotationCorrection);
     }
 
     private void validateIsOnUIThread() {
@@ -145,6 +192,11 @@ public class MainActivity extends AppCompatActivity
                 ScalesDialogFragment sdf = ScalesDialogFragment.newInstance(scaleSelections);
                 sdf.show(getSupportFragmentManager(), "scalesDialogTag");
                 return true;
+            case R.id.font_rotation_correction_id:
+                FontRotationCorrectionDialogFragment frdf = FontRotationCorrectionDialogFragment.newInstance(
+                    fontRotationCorrection);
+                frdf.show(getSupportFragmentManager(), "fontRotationCorrectionDialogTag");
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -164,6 +216,26 @@ public class MainActivity extends AppCompatActivity
             oel.disable();
         }
         super.onPause();
+
+        SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+
+        editor.putInt(FONT_ROTATION_CORRECTION_KEY, fontRotationCorrection);
+        Log.i(TAG, "SharedPreferences editor.putInt(" + FONT_ROTATION_CORRECTION_KEY + ", "
+            + fontRotationCorrection + ")");
+
+        scaleSelectionNames = new TreeSet<String>();
+        for(String scaleName : scaleSelections.keySet()) {
+            if(scaleSelections.get(scaleName)) {
+                scaleSelectionNames.add(scaleName);
+            }
+        }
+        editor.putStringSet(SCALE_SELECTIONS_KEY, scaleSelectionNames);
+        Log.i(TAG, "SharedPreferences editor.putStringSet(" + SCALE_SELECTIONS_KEY + ", "
+            + scaleSelectionNames + ")");
+
+        editor.commit();
+
     }
 
 }
