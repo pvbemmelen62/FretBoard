@@ -1,0 +1,197 @@
+
+public class FretboardView extends View {
+      :
+    /** Most recent MotionEvent.ACTION_[POINTER_]DOWN as recorded by OnTouchListener */
+    private float xDown;
+    private float yDown;
+    /** Most recent MotionEvent.ACTION_[POINTER_]UP as recorded by OnTouchListener */
+    private float xUp;
+    private float yUp;
+    /** Most recent MotionEvent.ACTION_MOVE as recorded by OnTouchListener */
+    private float xMove;
+    private float yMove;
+
+      :
+
+    private class MyOnClickListener implements OnClickListener {
+        @Override
+        public void onClick(View v) {
+            Log.i(TAG, "onClick at (" + ((int)xDown) + "," + ((int)yDown) + ")" );
+        }
+    }
+    private class MyOnLongClickListener implements OnLongClickListener {
+        @Override
+        public boolean onLongClick(View v) {
+            Log.i(TAG, "onLongClick at (" + ((int)xDown) + "," + ((int)yDown) + ")" );
+            return true;
+        }
+    }
+
+    /**
+     * Stores x,y coordinates of last ACTION_[POINTER_]DOWN and of last ACTION_[POINTER_]UP in
+     * xDown,yDown, respectively xUp,yUp for use by the OnClickListener and OnLongClickListener.
+     */
+    private class MyOnTouchListener implements OnTouchListener {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            switch(event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_POINTER_DOWN: {
+                    int pointerIndex = event.getActionIndex();
+                    xDown = event.getX(pointerIndex);
+                    yDown = event.getY(pointerIndex);
+                    Log.i(TAG, "xDown,yDown <-- " + xDown + "," + yDown);
+                    break;
+                }
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_POINTER_UP: {
+                    int pointerIndex = event.getActionIndex();
+                    xUp = event.getX(pointerIndex);
+                    yUp = event.getY(pointerIndex);
+                    Log.i(TAG, "xUp,yUp <-- " + xUp + "," + yUp);
+                    break;
+                }
+                case MotionEvent.ACTION_MOVE:
+                    int pointerIndex = event.getActionIndex();
+                    xMove = event.getX(pointerIndex);
+                    yMove = event.getY(pointerIndex);
+                    Log.i(TAG, "xMove,yMove <-- " + xMove + "," + yMove);
+                    break;
+                default:
+                    // Log.i(TAG, "Ignored MotionEvent: " + event);
+            }
+            return false;
+        }
+    }
+
+      :
+}
+
+A short click:
+
+01-14 11:25:58.386 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xDown,yDown <-- 753.7361,241.5509
+01-14 11:25:58.386 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xUp,yUp <-- 753.7361,241.5509
+01-14 11:25:58.396 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: onClick at (753,241)
+
+A long click:
+
+01-14 11:26:32.499 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xDown,yDown <-- 284.27762,318.67944
+01-14 11:26:32.529 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 285.77908,318.67944
+01-14 11:26:32.579 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 285.2786,319.8289
+01-14 11:26:32.609 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 285.2786,320.72394
+01-14 11:26:32.679 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 285.2786,321.82794
+01-14 11:26:32.709 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 285.2786,322.8061
+01-14 11:26:33.009 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: onLongClick at (284,318)
+01-14 11:26:33.630 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 286.27957,321.55295
+01-14 11:26:33.640 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 287.28055,321.68445
+01-14 11:26:33.640 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xUp,yUp <-- 287.28055,321.68445
+
+A click and drag:
+
+01-14 11:27:29.054 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xDown,yDown <-- 282.27567,127.360596
+01-14 11:27:29.184 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 281.25677,128.38017
+01-14 11:27:29.194 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 281.2747,129.86478
+01-14 11:27:29.244 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 281.2747,130.42795
+01-14 11:27:29.294 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 281.2747,131.55415
+01-14 11:27:29.324 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 281.2747,132.61572
+01-14 11:27:29.354 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 281.2747,133.39885
+01-14 11:27:29.404 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 281.2747,134.55388
+01-14 11:27:29.494 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 282.38068,134.37228
+01-14 11:27:29.545 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 282.27567,135.52097
+01-14 11:27:29.555 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: onLongClick at (282,127)
+01-14 11:27:29.575 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 283.5292,135.37395
+01-14 11:27:29.595 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 284.88504,136.37561
+01-14 11:27:29.605 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 285.77908,136.37561
+01-14 11:27:29.625 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 287.7534,137.11302
+01-14 11:27:29.645 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 289.5789,137.37729
+01-14 11:27:29.655 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 291.9315,138.20186
+01-14 11:27:29.675 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 293.63626,138.37895
+01-14 11:27:29.695 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 296.99847,138.37895
+01-14 11:27:29.705 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 298.69757,139.78719
+01-14 11:27:29.725 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 302.06836,139.38063
+01-14 11:27:29.745 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 303.77267,139.38063
+01-14 11:27:29.755 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 307.24707,139.38063
+01-14 11:27:29.775 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 308.8117,140.3823
+01-14 11:27:29.785 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 311.3979,140.3823
+01-14 11:27:29.805 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 312.87488,140.3823
+01-14 11:27:29.825 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 314.3951,140.3823
+01-14 11:27:29.835 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 315.93103,140.3823
+01-14 11:27:29.855 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 317.4689,140.3823
+01-14 11:27:29.875 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 318.99124,140.3823
+01-14 11:27:29.885 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 321.74637,141.60039
+01-14 11:27:29.905 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 323.05206,141.38396
+01-14 11:27:29.925 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 325.8793,141.38396
+01-14 11:27:29.935 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 329.1626,141.38396
+01-14 11:27:29.955 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 332.35507,141.38396
+01-14 11:27:29.975 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 335.4093,141.38396
+01-14 11:27:29.995 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 338.51666,141.38396
+01-14 11:27:30.005 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 341.56433,142.5012
+01-14 11:27:30.025 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 344.61194,142.38564
+01-14 11:27:30.035 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 347.68152,142.38564
+01-14 11:27:30.055 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 350.04648,143.3873
+01-14 11:27:30.075 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 352.72174,143.3873
+01-14 11:27:30.095 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 354.82675,143.3873
+01-14 11:27:30.105 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 356.6421,143.3873
+01-14 11:27:30.125 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 357.84946,143.3873
+01-14 11:27:30.145 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 358.5175,143.3873
+01-14 11:27:30.155 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 360.2165,144.25348
+01-14 11:27:30.175 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 360.8524,144.88982
+01-14 11:27:30.185 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 362.24384,144.38898
+01-14 11:27:30.205 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 363.84067,144.38898
+01-14 11:27:30.245 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 365.7961,143.82693
+01-14 11:27:30.255 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 367.396,143.35
+01-14 11:27:30.275 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 368.9301,143.3873
+01-14 11:27:30.285 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 370.432,143.3873
+01-14 11:27:30.305 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 371.98996,143.3873
+01-14 11:27:30.325 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 373.48666,144.5111
+01-14 11:27:30.335 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 375.025,144.38898
+01-14 11:27:30.355 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 376.561,144.38898
+01-14 11:27:30.375 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 378.08298,144.38898
+01-14 11:27:30.385 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 379.61023,144.38898
+01-14 11:27:30.405 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 381.91116,144.38898
+01-14 11:27:30.425 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 383.61533,144.38898
+01-14 11:27:30.445 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 385.1764,144.38898
+01-14 11:27:30.455 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 386.72632,144.38898
+01-14 11:27:30.475 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 388.23557,144.38898
+01-14 11:27:30.495 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 389.7901,144.38898
+01-14 11:27:30.505 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 391.31387,144.38898
+01-14 11:27:30.525 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 392.8447,144.38898
+01-14 11:27:30.536 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 395.28815,144.38898
+01-14 11:27:30.556 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 396.9124,144.38898
+01-14 11:27:30.576 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 399.56296,144.38898
+01-14 11:27:30.596 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 401.67896,144.38898
+01-14 11:27:30.606 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 403.6719,144.38898
+01-14 11:27:30.626 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 406.1703,144.38898
+01-14 11:27:30.646 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 408.94604,144.38898
+01-14 11:27:30.656 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 411.06796,145.22363
+01-14 11:27:30.676 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 412.73395,145.39064
+01-14 11:27:30.686 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 415.24875,145.39064
+01-14 11:27:30.706 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 416.82285,145.39064
+01-14 11:27:30.726 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 418.31195,145.39064
+01-14 11:27:30.746 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 419.8806,145.39064
+01-14 11:27:30.756 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 421.39606,145.39064
+01-14 11:27:30.776 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 422.93427,145.39064
+01-14 11:27:30.796 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 423.91397,145.39064
+01-14 11:27:30.806 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 425.00192,145.39064
+01-14 11:27:30.826 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 425.91592,145.39064
+01-14 11:27:30.846 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 426.73535,145.39064
+01-14 11:27:30.856 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 427.52023,145.39064
+01-14 11:27:30.876 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 428.12732,144.38898
+01-14 11:27:30.886 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 428.91885,144.38898
+01-14 11:27:30.906 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 430.19867,144.38898
+01-14 11:27:30.926 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 431.73367,144.38898
+01-14 11:27:30.956 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 433.75247,144.38898
+01-14 11:27:30.976 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 434.92474,144.38898
+01-14 11:27:30.986 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 435.64484,144.38898
+01-14 11:27:31.006 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 437.39795,144.38898
+01-14 11:27:31.026 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 438.9359,144.38898
+01-14 11:27:31.036 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 440.46277,144.38898
+01-14 11:27:31.076 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 441.80118,144.38898
+01-14 11:27:31.106 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 442.67548,144.38898
+01-14 11:27:31.176 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 443.47183,144.38898
+01-14 11:27:31.276 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 443.43304,143.29471
+01-14 11:27:31.286 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 443.43304,142.36708
+01-14 11:27:31.336 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 442.43207,140.43909
+01-14 11:27:31.356 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 439.89224,138.30415
+01-14 11:27:31.366 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xMove,yMove <-- 439.42914,137.37729
+01-14 11:27:31.366 29672-29672/nl.xs4all.pvbemmel.fretboard I/FretboardView: xUp,yUp <-- 439.42914,137.37729

@@ -1,0 +1,207 @@
+package nl.xs4all.pvbemmel.android.view;
+
+import android.app.Activity;
+import android.os.SystemClock;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+
+/**
+ * Created by Paul on 1/13/2016.
+ */
+public class MyGestureDetector {
+    static final short NONE = 0;
+    static final short DRAG = 1;
+    static final short ZOOM = 2;
+    static final short TAP = 3;
+    static final short DOUBLE_TAP = 4;
+    static final short POST_GESTURE = 5;
+    short mode = NONE;
+    static final float MIN_PINCH_DISTANCE = 30f;
+    static final float MIN_DRAG_DISTANCE = 5f;
+    static final float DOUBLE_TAP_MAX_DISTANCE = 30f;
+    static final long MAX_DOUBLE_TAP_MS = 1000;
+    static final long LONG_PRESS_THRESHOLD_MS = 2000;
+
+    public class Vector2d {
+        public float x;
+        public float y;
+
+        public Vector2d() {
+            x = 0f;
+            y = 0f;
+        }
+
+        public void set(float newX, float newY) {
+            x = newX;
+            y = newY;
+        }
+
+        public Vector2d avgVector(Vector2d remote) {
+            Vector2d mid = new Vector2d();
+            mid.set((remote.x + x)/2, (remote.y + y)/2);
+            return mid;
+        }
+
+        public float length() {
+            return (float) Math.sqrt(x * x + y * y);
+        }
+
+        public float distance(Vector2d remote) {
+            float deltaX = remote.x - x;
+            float deltaY = remote.y - y;
+            return (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        }
+    }
+
+    private Vector2d finger1 = new Vector2d();
+    private Vector2d finger2 = new Vector2d();
+    private Vector2d pinchStartDistance = new Vector2d();
+    private Vector2d pinchMidPoint;
+    private Vector2d fingerStartPoint = new Vector2d();
+    private long gestureStartTime;
+    private Marker selectedMarker;
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        // Dump touch event to log
+        dumpEvent(event);
+
+        // Handle touch events here...
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_DOWN:
+                finger1.set(event.getX(), event.getY());
+                if (mode == TAP) {
+                    if (finger1.distance(fingerStartPoint) < DOUBLE_TAP_MAX_DISTANCE) {
+                        mode = DOUBLE_TAP;
+                    } else {
+                        mode = NONE;
+                        gestureStartTime = SystemClock.uptimeMillis();
+                    }
+                } else {
+                    gestureStartTime = SystemClock.uptimeMillis();
+                }
+                fingerStartPoint.set(event.getX(), event.getY());
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+                finger2.set(event.getX(1), event.getY(1));
+
+                pinchStartDistance.set(Math.abs(finger1.x - finger2.x), Math.abs(finger1.y - finger2.y));
+                Log.d(TAG, String.format("pinch start distance = %f, %f", pinchStartDistance.x, pinchStartDistance.y));
+                if (pinchStartDistance.length() > MIN_PINCH_DISTANCE) {
+                    if (pinchStartDistance.x < MIN_PINCH_DISTANCE) {
+                        pinchStartDistance.x = MIN_PINCH_DISTANCE;
+                    }
+                    if (pinchStartDistance.y < MIN_PINCH_DISTANCE) {
+                        pinchStartDistance.y = MIN_PINCH_DISTANCE;
+                    }
+                    pinchMidPoint = finger1.avgVector(finger2);
+                    mode = ZOOM;
+                    Log.d(TAG, "mode=ZOOM" );
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
+                if (mode == ZOOM) {
+                    Vector2d pinchEndDistance = new Vector2d();
+                    pinchEndDistance.set(Math.abs(finger1.x - finger2.x), Math.abs(finger1.y - finger2.y));
+                    if (pinchEndDistance.x < MIN_PINCH_DISTANCE) {
+                        pinchEndDistance.x = MIN_PINCH_DISTANCE;
+                    }
+                    if (pinchEndDistance.y < MIN_PINCH_DISTANCE) {
+                        pinchEndDistance.y = MIN_PINCH_DISTANCE;
+                    }
+                    Log.d(TAG, String.format("pinch end distance = %f, %f", pinchEndDistance.x, pinchEndDistance.y));
+                    zoom(pinchMidPoint, pinchStartDistance.x/pinchEndDistance.x, pinchStartDistance.y/pinchEndDistance.y);
+                    // Set mode to "POST_GESTURE" so that when the other finger lifts the handler won't think it was a
+                    // tap or something.
+                    mode = POST_GESTURE;
+                } else if (mode == NONE) {
+                    // The finger wasn't moved enough for it to be considered a "drag", so it is either a tap
+                    // or a "long press", depending on how long it was down.
+                    if ((SystemClock.uptimeMillis() - gestureStartTime) < LONG_PRESS_THRESHOLD_MS) {
+                        Log.d(TAG, "mode=TAP");
+                        mode = TAP;
+                        selectedMarker = checkForMarker(finger1);
+                        if (selectedMarker != null) {
+                            Log.d(TAG, "Selected marker, mode=NONE");
+                            mode = NONE;
+                            ((Activity) parent).showDialog(ResultsActivity.DIALOG_MARKER_ID);
+                        }
+                    }
+                    else {
+                        Log.d(TAG, "mode=LONG_PRESS");
+                        addMarker(finger1);
+                        requestRender();
+                    }
+                } else if (mode == DOUBLE_TAP && (SystemClock.uptimeMillis() - gestureStartTime) < MAX_DOUBLE_TAP_MS) {
+                    // The finger was again not moved enough for it to be considered a "drag", so it is
+                    // a double-tap.  Change the center point and zoom in.
+                    Log.d(TAG, "mode=DOUBLE_TAP");
+                    zoom(fingerStartPoint, 0.5f, 0.5f);
+                    mode = NONE;
+                } else {
+                    mode = NONE;
+                    Log.d(TAG, "mode=NONE" );
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (mode == NONE || mode == TAP || mode == DOUBLE_TAP) {
+                    finger1.set(event.getX(), event.getY());
+                    if (finger1.distance(fingerStartPoint) > MIN_DRAG_DISTANCE) {
+                        Log.d(TAG, "mode=DRAG" );
+                        mode = DRAG;
+                        scroll(fingerStartPoint.x - finger1.x, fingerStartPoint.y - finger1.y);
+                    }
+                }
+                else if (mode == DRAG) {
+                    scroll(finger1.x - event.getX(), finger1.y - event.getY());
+                    finger1.set(event.getX(), event.getY());
+                }
+                else if (mode == ZOOM) {
+                    for (int i=0; i<event.getPointerCount(); i++) {
+                        if (event.getPointerId(i) == 0) {
+                            finger1.set(event.getX(i), event.getY(i));
+                        }
+                        else if (event.getPointerId(i) == 1) {
+                            finger2.set(event.getX(i), event.getY(i));
+                        }
+                        else {
+                            Log.w(TAG, String.format("Unknown motion event pointer id: %d", event.getPointerId(i)));
+                        }
+                    }
+                }
+                break;
+        }
+
+        return true;
+    }
+
+    /** Show an event in the LogCat view, for debugging */
+    private void dumpEvent(MotionEvent event) {
+        String names[] = { "DOWN" , "UP" , "MOVE" , "CANCEL" , "OUTSIDE" ,
+            "POINTER_DOWN" , "POINTER_UP" , "7?" , "8?" , "9?" };
+        StringBuilder sb = new StringBuilder();
+        int action = event.getAction();
+        int actionCode = action & MotionEvent.ACTION_MASK;
+        sb.append("event ACTION_" ).append(names[actionCode]);
+        if (actionCode == MotionEvent.ACTION_POINTER_DOWN
+            || actionCode == MotionEvent.ACTION_POINTER_UP) {
+            sb.append("(pid " ).append(
+                action >> MotionEvent.ACTION_POINTER_ID_SHIFT);
+            sb.append(")" );
+        }
+        sb.append("[" );
+        for (int i = 0; i < event.getPointerCount(); i++) {
+            sb.append("#" ).append(i);
+            sb.append("(pid " ).append(event.getPointerId(i));
+            sb.append(")=" ).append((int) event.getX(i));
+            sb.append("," ).append((int) event.getY(i));
+            if (i + 1 < event.getPointerCount())
+                sb.append(";" );
+        }
+        sb.append("]" );
+        Log.d(TAG, sb.toString());
+    }
+
+}
