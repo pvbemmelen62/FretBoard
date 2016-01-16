@@ -17,8 +17,6 @@ import android.view.View;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeMap;
@@ -31,8 +29,6 @@ public class FretboardView extends View {
 
     private static final String TAG = FretboardView.class.getSimpleName();
 
-    private HashMap<String,ScaleDrawInfo> scaleDrawInfoMap;
-
     private int margin;
     private final int fretStart = 0;
     private final int fretEnd = 12;
@@ -42,7 +38,6 @@ public class FretboardView extends View {
     private int stringEnd = tuning.getNumberOfStrings()-1;
     /** long length/short length */
     private final double fretboardRatio = 4;
-    private List<Scale> scales;
     private Matrix matrix;
     private int drawCount;
     private Paint countPaint;
@@ -56,13 +51,13 @@ public class FretboardView extends View {
     private float xMove;
     private float yMove;
     private ArrayList<Integer> fretNumbers;
+    private TreeMap<String,Boolean> scaleSelections;
 
     private int fontRotationCorrection;
     /**
      * See MainActivity.MyOrientationEventListener.orientationRounded .
      */
     private int orientationRounded;
-
 
     public FretboardView(Context context) {
         super(context);
@@ -80,8 +75,6 @@ public class FretboardView extends View {
     }
     protected void init(Context ctx) {
         margin = 30;
-        scales = new ArrayList<Scale>();
-        scaleDrawInfoMap = new HashMap<String,ScaleDrawInfo>();
         matrix = null;
         drawCount = 0;
         countPaint = new Paint();
@@ -154,34 +147,9 @@ public class FretboardView extends View {
         Log.i(TAG, "setFontRotationCorrection(" + fontRotationCorrection + ")");
         this.fontRotationCorrection = fontRotationCorrection;
     }
-    public void addScale(Scale scale) {
-        Log.i(TAG, "addScale(" + scale + ")");
-        scales.add(scale);
-    }
-    public void addScales(TreeMap<String,Boolean> selections) {
-        Log.i(TAG, "addScales(" + selections + ")");
-        for(Scale scale : Scale.getScales()) {
-            if(selections.get(scale.getName())) {
-                addScale(scale);
-            }
-        }
-
-    }
-    public void removeScale(Scale scale) {
-        Log.i(TAG, "removeScale(" + scale + ")");
-        scales.remove(scale);
-    }
-    public void removeScale(String scaleName) {
-        Log.i(TAG, "removeScale(" + scaleName + ")");
-        for(int i=0; i<scales.size(); ++i) {
-            if(scales.get(i).getName().equals(scaleName)) {
-                scales.remove(i);
-            }
-        }
-    }
-    public void removeScales() {
-        Log.i(TAG, "removeScales()");
-        scales.clear();
+    public void setScaleSelections(TreeMap<String,Boolean> scaleSelections) {
+        Log.i(TAG, "setScaleSelections(" + scaleSelections + ")");
+        this.scaleSelections = scaleSelections;
     }
 
     @Override
@@ -190,12 +158,6 @@ public class FretboardView extends View {
         super.invalidate();
     }
 
-    /**
-     * Returns the list of scales, wrapped as an unmodifiable list.
-     */
-    public List<Scale> getScales() {
-        return Collections.unmodifiableList(scales);
-    }
     /** Calculates matrix that maps (fret,string) to (x,y) , and assigns it to instance variable
      *  <code>matrix</code>.
      *  <p>
@@ -283,7 +245,9 @@ public class FretboardView extends View {
 
         Paint paintText = new Paint();
         paintText.setColor(Color.BLACK);
-        paintText.setTypeface(Typeface.SANS_SERIF);
+        Typeface typeface= Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
+        paintText.setTypeface(typeface);
+        //paintText.setTypeface(Typeface.SANS_SERIF);
         paintText.setTextSize(20);
 
         drawFretNumbers(canvas, paintText);
@@ -340,8 +304,9 @@ public class FretboardView extends View {
     private void drawCount(Canvas canvas) {
         canvas.drawText(""+drawCount, 100,100, countPaint);
     }
+
     private void drawOrientationRounded(Canvas canvas) {
-        canvas.drawText(""+orientationRounded, 300,100, countPaint);
+        canvas.drawText("" + orientationRounded, 300, 100, countPaint);
     }
     public void setOrientationRounded(int orientationRounded) {
         if(this.orientationRounded == orientationRounded) {
@@ -370,13 +335,18 @@ public class FretboardView extends View {
     }
     private void drawScales(Canvas canvas) {
         TreeSet<Position> filled = new TreeSet<Position>();
-        for(Scale scale : scales) {
-            drawScale(scale, filled, canvas);
+        for(Scale scale : Scale.getScales()) {
+            if(scaleSelections.get(scale.getName())) {
+                drawScale(scale, filled, canvas);
+            }
         }
     }
     private void drawScale(Scale scale, TreeSet<Position> filled, Canvas canvas) {
         int r = 20;
-        ScaleDrawInfo sdi = scale.getScaleDrawInfo();
+        ScaleDrawInfo sdi = ScaleDrawInfo.getScaleDrawInfoMap().get(scale.getName());
+        if(sdi==null) {
+            throw new IllegalStateException("ScaleDrawInfo for " + scale.getName() + " is null.");
+        }
 
         List<Position> positions = getFretboardPositions(scale, 0, 12);
         for (Position pos : positions) {
@@ -460,7 +430,5 @@ public class FretboardView extends View {
         bottom = h  ;
         paint.setColor(Color.BLUE);
         canvas.drawRect(left, top, right, bottom, paint);
-
-//        paint.setStyle(ps);
     }
 }

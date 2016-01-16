@@ -1,8 +1,5 @@
 package nl.xs4all.pvbemmel.fretboard;
 
-import android.graphics.Color;
-import android.graphics.Paint;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -23,7 +20,6 @@ public class Scale {
     /** contains[note.getLocalOffset()] == true iff scale contains note */
     private boolean[] contains;
     private String baseNote;
-    private ScaleDrawInfo scaleDrawInfo;
 
     private static ArrayList<Scale> scales = null;
 
@@ -32,18 +28,18 @@ public class Scale {
             scales = new ArrayList<Scale>();
             String baseNote = "C";
 
-            scales.add(new Scale("Major", new int[]{2, 2, 1, 2, 2, 2, 1}, baseNote,
-                new ScaleDrawInfo(Color.argb(255,255,255,0), Color.argb(255,0,0,0))));
+            scales.add(new Scale("Major", new int[]{2, 2, 1, 2, 2, 2, 1}, baseNote));
+//                new ScaleDrawInfo(Color.argb(255,255,255,0), Color.argb(255,0,0,0))));
 
-            scales.add(new Scale("Pentatonic", new int[]{2, 2, 3, 2, 3}, baseNote,
-                new ScaleDrawInfo(Color.argb(255,255,100,100), Color.argb(255,0,0,0))));
+            scales.add(new Scale("Pentatonic", new int[]{2, 2, 3, 2, 3}, baseNote));
+//                new ScaleDrawInfo(Color.argb(255,255,100,100), Color.argb(255,0,0,0))));
 
-            scales.add(new Scale("Octave", new int[]{12}, baseNote,
-                new ScaleDrawInfo(Color.argb(255,125,0,0), Color.argb(255,0,0,0))));
+            scales.add(new Scale("Octave", new int[]{12}, baseNote));
+//                new ScaleDrawInfo(Color.argb(255,125,0,0), Color.argb(255,0,0,0))));
 
-            for(Scale scale : scales) {
-                scale.getScaleDrawInfo().bgPaint.setStyle(Paint.Style.FILL);
-            }
+//            for(Scale scale : scales) {
+//                scale.getScaleDrawInfo().bgPaint.setStyle(Paint.Style.FILL);
+//            }
 
             /* FretBoardView:
              *    Drawing of a scale note at a particular position occurs in scale order ,
@@ -65,7 +61,7 @@ public class Scale {
      * @param baseNote one of Note.getLocalNames() , i.e. without octave number.
      * @throws IllegalArgumentException if sum of intervals not equals 12.
      */
-    public Scale(String name, int[] intervals, String baseNote, ScaleDrawInfo scaleDrawInfo) {
+    public Scale(String name, int[] intervals, String baseNote) {
         this.name = name;
         this.intervals = intervals;
         this.baseNote = baseNote;
@@ -76,16 +72,10 @@ public class Scale {
             contains[localOffset] = true;
             localOffset = (localOffset+intervals[i])%length;
         }
-        this.scaleDrawInfo = scaleDrawInfo;
     }
     public String getName() {
         return name;
     }
-    /** Returns internal ScaleDrawInfo object; may be directly manipulated by the client. */
-    public ScaleDrawInfo getScaleDrawInfo() {
-        return scaleDrawInfo;
-    }
-
     public String toString() {
         return "{"
             + "name:" + name

@@ -14,7 +14,6 @@ import android.view.MenuItem;
 import android.view.OrientationEventListener;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -78,8 +77,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
 
         fretboardView = (FretboardView)findViewById(R.id.fretboard);
-        fretboardView.removeScales();
-        fretboardView.addScales(scaleSelections);
+        fretboardView.setScaleSelections(scaleSelections);
         fretboardView.setFontRotationCorrection(fontRotationCorrection);
 
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
@@ -92,15 +90,8 @@ public class MainActivity extends AppCompatActivity
     public void handleScaleSelections(TreeMap<String, Boolean> scaleSelections) {
         if (scaleSelections != null) {
             this.scaleSelections.clear();
-            for (Map.Entry<String, Boolean> entry : scaleSelections.entrySet()) {
-                this.scaleSelections.put(entry.getKey(), entry.getValue());
-            }
-            fretboardView.removeScales();
-            for(Scale scale : Scale.getScales()) {
-                if(scaleSelections.get(scale.getName())) {
-                    fretboardView.addScale(scale);
-                }
-            }
+            this.scaleSelections.putAll(scaleSelections);
+            fretboardView.setScaleSelections(this.scaleSelections);
             fretboardView.invalidate();
         }
     }
