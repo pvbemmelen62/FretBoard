@@ -54,6 +54,12 @@ public class Scale {
         }
         return scales;
     }
+    /** Sets base note for all scales returned by getScales() . */
+    public static void setBaseNotes(String baseNote) {
+        for(Scale scale : getScales()) {
+            scale.setBaseNote(baseNote);
+        }
+    }
     /**
      * Scale defined by base note and successive intervals.
      * @param name name of scale
@@ -64,8 +70,11 @@ public class Scale {
     public Scale(String name, int[] intervals, String baseNote) {
         this.name = name;
         this.intervals = intervals;
-        this.baseNote = baseNote;
         checkIntervals(intervals);
+        setBaseNote(baseNote);
+    }
+    public void setBaseNote(String baseNote) {
+        this.baseNote = baseNote;
         int localOffset = Note.getLocalOffsets().get(baseNote);
         contains = new boolean[length];
         for(int i=0; i<intervals.length; ++i) {
@@ -106,7 +115,7 @@ public class Scale {
     public Iterator<Integer> getFretIterator(Note note, int startFret) {
         return new FretIterator(note, startFret);
     }
-    /** Returns intervals.length-1 */
+    /** Returns intervals.length */
     public Integer getNumberOfNotes() {
         return intervals.length;
     }
