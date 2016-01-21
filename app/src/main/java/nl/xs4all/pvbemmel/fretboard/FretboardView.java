@@ -28,6 +28,11 @@ import java.util.TreeSet;
 public class FretboardView extends View {
 
     private static final String TAG = FretboardView.class.getSimpleName();
+    /**
+     * Ignore a long click when there has been a move larger than LONG_CLICK_MOVE_THRESHOLD
+     */
+    private static final float LONG_CLICK_MOVE_THRESHOLD = 5;
+    private static final float LONG_CLICK_MOVE_THRESHOLD_SQR = sqr(LONG_CLICK_MOVE_THRESHOLD);
 
     private int margin;
     private final int fretStart = 0;
@@ -35,6 +40,7 @@ public class FretboardView extends View {
     private final Tuning tuning = new Tuning(new String[]{"E2", "A2", "D3", "G3", "B3", "E4"});
     private final int stringStart = 0;
     private Boolean horizontal = null;
+    private String baseNote;
     /**
      * inclusive
      */
@@ -43,17 +49,21 @@ public class FretboardView extends View {
      * long length/short length
      */
     private final double fretboardRatio = 4;
-    /** Width as reported by {@linkplain #onSizeChanged(int, int, int, int)} .
+    /**
+     * Width as reported by {@linkplain #onSizeChanged(int, int, int, int)} .
      */
     private int viewWidth;
-    /** Height as reported by {@linkplain #onSizeChanged(int, int, int, int)} .
+    /**
+     * Height as reported by {@linkplain #onSizeChanged(int, int, int, int)} .
      */
     private int viewHeight;
     /**
      * Maps (fret,string) to (x,y) ; see {@linkplain #calcFSMatrix()} .
      */
     private Matrix fsMatrix;
-    /** Inverse of {@linkplain #fsMatrix}. */
+    /**
+     * Inverse of {@linkplain #fsMatrix}.
+     */
     private Matrix fsInverse;
     private int drawCount;
     private Paint countPaint;
@@ -72,8 +82,11 @@ public class FretboardView extends View {
      */
     private float xMove;
     private float yMove;
-    /** The delta fret corresponding to move from xDown,yDown to xMove,yMove .*/
+    /**
+     * The delta fret corresponding to move from xDown,yDown to xMove,yMove .
+     */
     private float deltaFret;
+    private int deltaFretNearest;
     //
     private ArrayList<Integer> fretNumbers;
     private TreeMap<String, Boolean> scaleSelections;
@@ -113,25 +126,33 @@ public class FretboardView extends View {
         fretNumbers = new ArrayList<Integer>(Arrays.asList(0, 3, 5, 7, 9, 12, 15));
         xyLongClick = null;
         deltaFret = 0;
+        deltaFretNearest = 0;
+        baseNote = "C";
         setOnClickListener(new MyOnClickListener());
         setOnLongClickListener(new MyOnLongClickListener());
         setOnTouchListener(new MyOnTouchListener());
     }
+
     private class MyOnClickListener implements OnClickListener {
         @Override
         public void onClick(View v) {
             Log.i(TAG, "onClick at (" + ((int) xDown) + "," + ((int) yDown) + ")");
         }
     }
+
     private class MyOnLongClickListener implements OnLongClickListener {
         @Override
         public boolean onLongClick(View v) {
             Log.i(TAG, "onLongClick at (" + ((int) xDown) + "," + ((int) yDown) + ")");
-            xyLongClick = new float[] {xDown, yDown};
+            if (distSqr(xDown, yDown, xMove, yMove) > LONG_CLICK_MOVE_THRESHOLD_SQR) {
+                return true;
+            }
+            xyLongClick = new float[]{xDown, yDown};
             invalidate();
             return true;
         }
     }
+
     /**
      * Stores x,y coordinates of last ACTION_[POINTER_]DOWN and of last ACTION_[POINTER_]UP in
      * xDown,yDown, respectively xUp,yUp for use by the OnClickListener and OnLongClickListener.
@@ -146,6 +167,9 @@ public class FretboardView extends View {
                     xDown = event.getX(pointerIndex);
                     yDown = event.getY(pointerIndex);
                     Log.i(TAG, "xDown,yDown <-- " + xDown + "," + yDown);
+                    // xMove,yMove still contain values from previous gesture; reset them:
+                    xMove = xDown;
+                    yMove = yDown;
                     break;
                 }
                 case MotionEvent.ACTION_UP:
@@ -156,6 +180,7 @@ public class FretboardView extends View {
                     yUp = event.getY(pointerIndex);
                     Log.i(TAG, "xUp,yUp <-- " + xUp + "," + yUp);
                     deltaFret = 0;
+                    deltaFretNearest = 0;
                     invalidate();
                     break;
                 }
@@ -165,7 +190,9 @@ public class FretboardView extends View {
                     yMove = event.getY(pointerIndex);
                     Log.i(TAG, "xMove,yMove <-- " + xMove + "," + yMove);
                     deltaFret = calcDeltaFret();
-                    Log.i(TAG, "deltaFret: " + deltaFret);
+                    deltaFretNearest = Math.round(deltaFret);
+                    Log.i(TAG, "deltaFret: " + deltaFret + ", deltaFretNearest: "
+                        + deltaFretNearest);
                     invalidate();
                     break;
                 default:
@@ -174,9 +201,10 @@ public class FretboardView extends View {
             return false;
         }
     }
+
     private float calcDeltaFret() {
-        Position posDown = positionFromXY(xDown,yDown);
-        Position posMove = positionFromXY(xMove,yMove);
+        Position posDown = positionFromXY(xDown, yDown);
+        Position posMove = positionFromXY(xMove, yMove);
 
         float rv = posMove.fret - posDown.fret;
         return rv;
@@ -189,15 +217,19 @@ public class FretboardView extends View {
         fsMatrix = null;
         fsInverse = null;
     }
+
     private Matrix getFSMatrix() {
-        if(fsMatrix == null) {
+        if (fsMatrix == null) {
             calcFSMatrix();
         }
         return fsMatrix;
     }
-    /** Calculates {@linkplain #fsInverse} if needed, and returns it */
+
+    /**
+     * Calculates {@linkplain #fsInverse} if needed, and returns it
+     */
     private Matrix getFSInverse() {
-        if(fsInverse==null) {
+        if (fsInverse == null) {
             calcFSInverse();
         }
         return fsInverse;
@@ -223,6 +255,7 @@ public class FretboardView extends View {
         Log.i(TAG, "invalidate()");
         super.invalidate();
     }
+
     /**
      * Calculates fsMatrix that maps (fret,string) to (x,y) , and assigns it to instance variable
      * <code>fsMatrix</code>.
@@ -302,10 +335,11 @@ public class FretboardView extends View {
     private void calcFSInverse() {
         fsInverse = new Matrix();
         boolean success = getFSMatrix().invert(fsInverse);
-        if(!success) {
+        if (!success) {
             throw new IllegalStateException("Error: Unable to invert fsMatrix");
         }
     }
+
     protected void onDraw(Canvas canvas) {
         Log.i(TAG, "onDraw(Canvas canvas)");
 
@@ -325,6 +359,11 @@ public class FretboardView extends View {
         drawFretNumbers(canvas, paintText);
 
         drawAxisMarkers(canvas);
+
+        if(xyLongClick!=null) {
+            baseNote = Note.getLocalNames().get(deltaFretNearest);
+            Scale.setBaseNotes(baseNote);
+        }
 
         drawScales(canvas);
 
@@ -422,6 +461,7 @@ public class FretboardView extends View {
             }
         }
     }
+
     private static RectF rectFromCenterAndRadius(float x, float y, float r) {
         float left = x - r;
         float top = y - r;
@@ -430,33 +470,51 @@ public class FretboardView extends View {
         RectF rv = new RectF(left, top, right, bottom);
         return rv;
     }
+
     private Position positionFromXY(float x, float y) {
-        float[] src = new float[] { x, y};
+        float[] src = new float[]{x, y};
         float[] dst = new float[2];
         getFSInverse().mapPoints(dst, src);
         Position rv = new Position(dst[1], dst[0]);
         return rv;
     }
+
     private float[] xyFromPosition(Position position) {
-        float[] src = new float[] { position.fret, position.string};
+        float[] src = new float[]{position.fret, position.string};
         float[] dst = new float[2];
         getFSMatrix().mapPoints(dst, src);
         return dst;
     }
+
     private static float sqr(float x) {
-        return x*x;
-    }
-    private static float distSqr(float[] xy0, float[] xy1) {
-        return sqr(xy0[0]-xy1[0]) + sqr(xy0[1]-xy1[1]);
+        return x * x;
     }
 
+    private static float distSqr(float[] xy0, float[] xy1) {
+        return sqr(xy0[0] - xy1[0]) + sqr(xy0[1] - xy1[1]);
+    }
+
+    private static float distSqr(float x0, float y0, float x1, float y1) {
+        return sqr(x0 - x1) + sqr(y0 - y1);
+    }
+
+    private static Paint getPaintLongClick() {
+        Paint paint = new Paint();
+        paint.setStyle(Paint.Style.STROKE);
+        int strokeWidth = 5;
+        paint.setStrokeWidth(strokeWidth);
+        paint.setColor(Color.RED);
+        return paint;
+    }
     private void drawScale(Scale scale, TreeSet<Position> filled, Canvas canvas) {
-        int r = 20;
         ScaleDrawInfo sdi = ScaleDrawInfo.getScaleDrawInfoMap().get(scale.getName());
         if (sdi == null) {
             throw new IllegalStateException("ScaleDrawInfo for " + scale.getName() + " is null.");
         }
-        float sqrr = sqr(r);
+        Paint paintLongClick = getPaintLongClick();
+        /** Radius of circle chosen equal to text size, gives visually pleasing result. */
+        float r = (int) sdi.textPaint.getTextSize();
+        //
         List<Position> positions = getFretboardPositions(scale, 0, 12);
         for (Position pos : positions) {
             if (filled.contains(pos)) {
@@ -466,8 +524,13 @@ public class FretboardView extends View {
             Note note = tuning.getNote((int) pos.string, (int) pos.fret);
 
             float[] xy = xyFromPosition(pos);
-            float x = xy[0] + (horizontal ? xMove-xDown : 0);
-            float y = xy[1] + (horizontal ? 0 : yMove-yDown);
+            float x = xy[0];
+            float y = xy[1];
+
+            if (xyLongClick != null) {
+                x += (horizontal ? xMove - xDown : 0);
+                y += (horizontal ? 0 : yMove - yDown);
+            }
             RectF rect = rectFromCenterAndRadius(x, y, r);
 
             canvas.drawOval(rect, sdi.bgPaint);
@@ -478,15 +541,12 @@ public class FretboardView extends View {
             drawCenteredText(canvas, sdi.textPaint, note.getLocalName(), x, y);
             canvas.restore();
 
-            if(xyLongClick!=null && distSqr(xy, xyLongClick) < sqrr) {
-                Log.i(TAG, "long click on note " + note);
-                Paint paint = new Paint();
-                paint.setStyle(Paint.Style.STROKE);
-                int strokeWidth = 10;
-                paint.setStrokeWidth(strokeWidth);
-                RectF rectClicked = rectFromCenterAndRadius(x,y,r*(1+strokeWidth/2));
-                paint.setColor(Color.RED);
-                canvas.drawOval(rect, paint);
+//            if (xyLongClick!=null && distSqr(xy, xyLongClick) < sqrr) {
+//                Log.i(TAG, "long click on note " + note);
+            if (xyLongClick != null) {
+                float rr = r * (1 + paintLongClick.getStrokeWidth() / 2);
+                RectF rectClicked = rectFromCenterAndRadius(x, y, rr);
+                canvas.drawOval(rect, paintLongClick);
             }
         }
     }

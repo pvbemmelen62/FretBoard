@@ -29,18 +29,8 @@ public class Scale {
             String baseNote = "C";
 
             scales.add(new Scale("Major", new int[]{2, 2, 1, 2, 2, 2, 1}, baseNote));
-//                new ScaleDrawInfo(Color.argb(255,255,255,0), Color.argb(255,0,0,0))));
-
             scales.add(new Scale("Pentatonic", new int[]{2, 2, 3, 2, 3}, baseNote));
-//                new ScaleDrawInfo(Color.argb(255,255,100,100), Color.argb(255,0,0,0))));
-
             scales.add(new Scale("Octave", new int[]{12}, baseNote));
-//                new ScaleDrawInfo(Color.argb(255,125,0,0), Color.argb(255,0,0,0))));
-
-//            for(Scale scale : scales) {
-//                scale.getScaleDrawInfo().bgPaint.setStyle(Paint.Style.FILL);
-//            }
-
             /* FretBoardView:
              *    Drawing of a scale note at a particular position occurs in scale order ,
              *    and only the first note is drawn. Therefore, sort:
@@ -54,7 +44,9 @@ public class Scale {
         }
         return scales;
     }
-    /** Sets base note for all scales returned by getScales() . */
+    /** Sets base note for all scales returned by getScales() .
+     * @param baseNote local name of base note.
+     */
     public static void setBaseNotes(String baseNote) {
         for(Scale scale : getScales()) {
             scale.setBaseNote(baseNote);
@@ -73,6 +65,14 @@ public class Scale {
         checkIntervals(intervals);
         setBaseNote(baseNote);
     }
+
+    public String getBaseNote() {
+        return baseNote;
+    }
+
+    /** Sets base note.
+     * @param baseNote local name of base note.
+     */
     public void setBaseNote(String baseNote) {
         this.baseNote = baseNote;
         int localOffset = Note.getLocalOffsets().get(baseNote);
