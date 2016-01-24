@@ -24,7 +24,7 @@ public class ScaleDrawInfo {
             sdiMap.put("Pentatonic",
                 new ScaleDrawInfo(Color.argb(255,255,100,100), Color.argb(255,0,0,0)));
 
-            sdiMap.put("Octave",
+            sdiMap.put("Root note",
                 new ScaleDrawInfo(Color.argb(255,125,0,0), Color.argb(255,0,0,0)));
 
             for(ScaleDrawInfo sdi : sdiMap.values()) {

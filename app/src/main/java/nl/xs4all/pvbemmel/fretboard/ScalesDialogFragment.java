@@ -94,8 +94,7 @@ public class ScalesDialogFragment extends DialogFragment {
                     for(Map.Entry<String,Boolean> entry : pendingScaleSelections.entrySet()) {
                         scaleSelections.put(entry.getKey(), entry.getValue());
                     }
-                    ScaleSelectionListener ssl = (ScaleSelectionListener)getActivity();
-                    ssl.handleScaleSelections(scaleSelections);
+                    ((MainActivity)getActivity()).handleScaleSelections(scaleSelections);
                 }
             })
             .setNegativeButton(R.string.scales_select_cancel, new DialogInterface.OnClickListener() {

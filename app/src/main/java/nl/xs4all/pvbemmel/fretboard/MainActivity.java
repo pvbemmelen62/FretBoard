@@ -18,18 +18,18 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-public class MainActivity extends AppCompatActivity
-        implements ScalesDialogFragment.ScaleSelectionListener,
-    FontRotationCorrectionDialogFragment.FontRotationListener {
+public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     public static final String SCALE_SELECTIONS_KEY = "scaleSelectionsKey";
     public static final String FONT_ROTATION_CORRECTION_KEY = "fontRotationCorrectionKey";
+    public static final String BASE_NOTE_KEY = "baseToneKey";
     private FretboardView fretboardView;
     private OrientationEventListener oel;
     private TreeMap<String,Boolean> scaleSelections;
     /** For storing in SharedPreferences */
     private Set<String> scaleSelectionNames;
     private Integer fontRotationCorrection;
+    private String baseNote;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
 
         SharedPreferences sharedPrefs = getPreferences(Context.MODE_PRIVATE);
-
+        //-----------------------------------------------------------------------------------
         scaleSelections = null;
         // You can't save TreeMap<String,Boolean> in SharedPreferences.
         // So instead, save the strings for which the boolean is true.
@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity
                 scaleSelections.put(scale.getName(), Boolean.TRUE);
             }
         }
-
+        //-----------------------------------------------------------------------------------
         fontRotationCorrection = 0;
         int fontRotationCorrectionPref = sharedPrefs.getInt(FONT_ROTATION_CORRECTION_KEY, -1);
         Log.i(TAG, "SharedPreferences getInt("+FONT_ROTATION_CORRECTION_KEY + ", -1) returns "
@@ -74,20 +74,27 @@ public class MainActivity extends AppCompatActivity
             fontRotationCorrection = savedInstanceState.getInt(FONT_ROTATION_CORRECTION_KEY,
                 fontRotationCorrection);
         }
+        //-----------------------------------------------------------------------------------
+        baseNote = sharedPrefs.getString(BASE_NOTE_KEY, "C");
+        if(savedInstanceState!=null) {
+            baseNote = savedInstanceState.getString(BASE_NOTE_KEY, baseNote);
+        }
+        //-----------------------------------------------------------------------------------
         setContentView(R.layout.activity_main);
 
         fretboardView = (FretboardView)findViewById(R.id.fretboard);
         fretboardView.setScaleSelections(scaleSelections);
         fretboardView.setFontRotationCorrection(fontRotationCorrection);
+        fretboardView.setBaseNote(baseNote);
 
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
 
         oel = new MyOrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL);
     }
-
-    @Override
     public void handleScaleSelections(TreeMap<String, Boolean> scaleSelections) {
+        Log.i(TAG, "handleScaleSelections(" + scaleSelections + ")");
+        // Is called from dialog, not from FretboardView
         if (scaleSelections != null) {
             this.scaleSelections.clear();
             this.scaleSelections.putAll(scaleSelections);
@@ -95,8 +102,8 @@ public class MainActivity extends AppCompatActivity
             fretboardView.invalidate();
         }
     }
-    @Override
     public void handleFontRotationCorrection(int fontRotationCorrection) {
+        // is called from dialog, not from FretboardView
         Log.i(TAG, "handleFontRotationCorrection(" + fontRotationCorrection + ")");
         if(fontRotationCorrection==fretboardView.getFontRotationCorrection()) {
             return;
@@ -105,6 +112,14 @@ public class MainActivity extends AppCompatActivity
         fretboardView.setFontRotationCorrection(fontRotationCorrection);
         fretboardView.invalidate();
     }
+    public void handleBaseNote(String baseNote) {
+        // is called from FretboardView
+        Log.i(TAG, "handleBaseNote(" + baseNote + ")");
+        if(!this.baseNote.equals(baseNote)) {
+            this.baseNote = baseNote;
+        }
+    }
+
     private class MyOrientationEventListener extends OrientationEventListener {
         /**
          * 0 : for orientation in [0,45)  or in [315,360)
@@ -159,6 +174,7 @@ public class MainActivity extends AppCompatActivity
         Bundle bundle = new Bundle();
         bundle.putSerializable(SCALE_SELECTIONS_KEY, scaleSelections);
         bundle.putInt(FONT_ROTATION_CORRECTION_KEY, fontRotationCorrection);
+        bundle.putString(BASE_NOTE_KEY, baseNote);
     }
 
     private void validateIsOnUIThread() {
@@ -224,6 +240,8 @@ public class MainActivity extends AppCompatActivity
         editor.putStringSet(SCALE_SELECTIONS_KEY, scaleSelectionNames);
         Log.i(TAG, "SharedPreferences editor.putStringSet(" + SCALE_SELECTIONS_KEY + ", "
             + scaleSelectionNames + ")");
+
+        editor.putString(BASE_NOTE_KEY, baseNote);
 
         editor.commit();
 

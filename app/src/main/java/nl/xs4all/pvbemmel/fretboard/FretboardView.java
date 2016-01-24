@@ -27,6 +27,10 @@ import java.util.TreeSet;
  */
 public class FretboardView extends View {
 
+    public interface BaseNoteListener {
+        void handleBaseNote(String baseNote);
+    }
+
     private static final String TAG = FretboardView.class.getSimpleName();
     /**
      * Ignore a long click when there has been a move larger than LONG_CLICK_MOVE_THRESHOLD
@@ -40,7 +44,10 @@ public class FretboardView extends View {
     private final Tuning tuning = new Tuning(new String[]{"E2", "A2", "D3", "G3", "B3", "E4"});
     private final int stringStart = 0;
     private Boolean horizontal = null;
+    /** Base note of scales being shown. */
     private String baseNote;
+    /** {@linkplain #baseNote} at the start of a move, where move starts on long click.*/
+    private String baseNoteStart;
     /**
      * inclusive
      */
@@ -86,7 +93,10 @@ public class FretboardView extends View {
      * The delta fret corresponding to move from xDown,yDown to xMove,yMove .
      */
     private float deltaFret;
-    private int deltaFretNearest;
+    /**
+     * {@linkplain #deltaFret} rounded to nearest integer.
+     */
+    private int deltaFretRounded;
     //
     private ArrayList<Integer> fretNumbers;
     private TreeMap<String, Boolean> scaleSelections;
@@ -126,8 +136,9 @@ public class FretboardView extends View {
         fretNumbers = new ArrayList<Integer>(Arrays.asList(0, 3, 5, 7, 9, 12, 15));
         xyLongClick = null;
         deltaFret = 0;
-        deltaFretNearest = 0;
+        deltaFretRounded = 0;
         baseNote = "C";
+        baseNoteStart = null;
         setOnClickListener(new MyOnClickListener());
         setOnLongClickListener(new MyOnLongClickListener());
         setOnTouchListener(new MyOnTouchListener());
@@ -170,6 +181,7 @@ public class FretboardView extends View {
                     // xMove,yMove still contain values from previous gesture; reset them:
                     xMove = xDown;
                     yMove = yDown;
+                    baseNoteStart = baseNote;
                     break;
                 }
                 case MotionEvent.ACTION_UP:
@@ -179,8 +191,15 @@ public class FretboardView extends View {
                     xUp = event.getX(pointerIndex);
                     yUp = event.getY(pointerIndex);
                     Log.i(TAG, "xUp,yUp <-- " + xUp + "," + yUp);
+                    if(!(xMove==xUp && yMove==yUp)) {
+                        Log.i(TAG, "{xMove,yMove} != {xUp,yUp}");
+                    }
                     deltaFret = 0;
-                    deltaFretNearest = 0;
+                    deltaFretRounded = 0;
+                    if(!baseNoteStart.equals(baseNote)) {
+
+                    }
+                    baseNoteStart = null;
                     invalidate();
                     break;
                 }
@@ -189,10 +208,17 @@ public class FretboardView extends View {
                     xMove = event.getX(pointerIndex);
                     yMove = event.getY(pointerIndex);
                     Log.i(TAG, "xMove,yMove <-- " + xMove + "," + yMove);
+                    if(xyLongClick==null) {
+                        break;
+                    }
                     deltaFret = calcDeltaFret();
-                    deltaFretNearest = Math.round(deltaFret);
-                    Log.i(TAG, "deltaFret: " + deltaFret + ", deltaFretNearest: "
-                        + deltaFretNearest);
+                    deltaFretRounded = Math.round(deltaFret);
+                    Log.i(TAG, "deltaFret: " + deltaFret + ", deltaFretRounded: "
+                        + deltaFretRounded);
+                    int localOffset = Note.getLocalOffsets().get(baseNoteStart)+(int)deltaFretRounded;
+                    localOffset = calcCanonicalIndex(Note.getLocalNames().size(), localOffset);
+                    String baseNoteNew = Note.getLocalNames().get(localOffset);
+                    setBaseNote(baseNoteNew);
                     invalidate();
                     break;
                 default:
@@ -200,6 +226,22 @@ public class FretboardView extends View {
             }
             return false;
         }
+    }
+    public void setBaseNote(String baseNote) {
+        if(!this.baseNote.equals(baseNote)) {
+            this.baseNote = baseNote;
+            Scale.setBaseNotes(baseNote);
+            ((MainActivity)(getContext())).handleBaseNote(baseNote);
+        }
+    }
+
+    /** For index&ge;0 returns index%size, else returns size+(index%size) .
+     * <br/>
+     * Equivalent to: Returns integer i with 0 <= i < size , such that index==i+k*size  for some integer k.
+     *
+     */
+    private static int calcCanonicalIndex(int size, int index) {
+        return index<0 ? size+(index%size) : index%size;
     }
 
     private float calcDeltaFret() {
@@ -360,10 +402,10 @@ public class FretboardView extends View {
 
         drawAxisMarkers(canvas);
 
-        if(xyLongClick!=null) {
-            baseNote = Note.getLocalNames().get(deltaFretNearest);
-            Scale.setBaseNotes(baseNote);
-        }
+//        if(xyLongClick!=null) {
+//            baseNote = Note.getLocalNames().get(deltaFretRounded);
+//            Scale.setBaseNotes(baseNote);
+//        }
 
         drawScales(canvas);
 
@@ -527,9 +569,11 @@ public class FretboardView extends View {
             float x = xy[0];
             float y = xy[1];
 
-            if (xyLongClick != null) {
-                x += (horizontal ? xMove - xDown : 0);
-                y += (horizontal ? 0 : yMove - yDown);
+            if(xyLongClick != null) {
+                float[] xy0 = xyFromPosition(new Position(0,deltaFret));
+                float[] xy1 = xyFromPosition(new Position(0,deltaFretRounded));
+                x += (xy0[0]-xy1[0]);
+                y += (xy0[1]-xy1[1]);
             }
             RectF rect = rectFromCenterAndRadius(x, y, r);
 

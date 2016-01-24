@@ -78,9 +78,8 @@ public class FontRotationCorrectionDialogFragment extends DialogFragment {
             .setPositiveButton(R.string.scales_select_ok, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int id) {
-                    FontRotationListener frsl =
-                        (FontRotationListener)getActivity();
-                    frsl.handleFontRotationCorrection(validCorrections.get(selectionIndexArray[0]));
+                    ((MainActivity)getActivity()).handleFontRotationCorrection(
+                        validCorrections.get(selectionIndexArray[0]));
                 }
             })
             .setNegativeButton(R.string.scales_select_cancel, new DialogInterface.OnClickListener() {

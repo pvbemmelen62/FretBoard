@@ -30,7 +30,7 @@ public class Scale {
 
             scales.add(new Scale("Major", new int[]{2, 2, 1, 2, 2, 2, 1}, baseNote));
             scales.add(new Scale("Pentatonic", new int[]{2, 2, 3, 2, 3}, baseNote));
-            scales.add(new Scale("Octave", new int[]{12}, baseNote));
+            scales.add(new Scale("Root note", new int[]{12}, baseNote));
             /* FretBoardView:
              *    Drawing of a scale note at a particular position occurs in scale order ,
              *    and only the first note is drawn. Therefore, sort:
@@ -71,9 +71,15 @@ public class Scale {
     }
 
     /** Sets base note.
+     *
+     * Checks if argument equals current value of baseNote, and if so returns quickly.
      * @param baseNote local name of base note.
+     * @throws NullPointerException if baseNote is null.
      */
     public void setBaseNote(String baseNote) {
+        if(baseNote.equals(this.getBaseNote())) {
+            return;
+        }
         this.baseNote = baseNote;
         int localOffset = Note.getLocalOffsets().get(baseNote);
         contains = new boolean[length];
