@@ -15,6 +15,10 @@
             android:id="@+id/font_rotation_correction_id"
             android:title="@string/font_rotation_correction_title"
             />
+        <item
+            android:id="@+id/axis_markers_id"
+            android:title="@string/axis_markers_title"
+            />
     </menu>
 </item>
 </menu>

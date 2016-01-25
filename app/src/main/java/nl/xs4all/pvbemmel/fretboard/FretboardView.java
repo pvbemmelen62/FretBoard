@@ -27,10 +27,6 @@ import java.util.TreeSet;
  */
 public class FretboardView extends View {
 
-    public interface BaseNoteListener {
-        void handleBaseNote(String baseNote);
-    }
-
     private static final String TAG = FretboardView.class.getSimpleName();
     /**
      * Ignore a long click when there has been a move larger than LONG_CLICK_MOVE_THRESHOLD
@@ -101,12 +97,19 @@ public class FretboardView extends View {
     private ArrayList<Integer> fretNumbers;
     private TreeMap<String, Boolean> scaleSelections;
     private float[] xyLongClick;
+    /** multiple pointers have occurred in current gesture. */
+    private boolean multiTouch = false;
 
     private int fontRotationCorrection;
     /**
      * See MainActivity.MyOrientationEventListener.orientationRounded .
      */
     private int orientationRounded;
+    /**
+     * Show axis markers iff true.
+     * Axis markers: red square at (0,0), green square at (width,0), blue square at (0, height).
+     */
+    private Boolean axisMarkersShow;
 
     public FretboardView(Context context) {
         super(context);
@@ -155,6 +158,9 @@ public class FretboardView extends View {
         @Override
         public boolean onLongClick(View v) {
             Log.i(TAG, "onLongClick at (" + ((int) xDown) + "," + ((int) yDown) + ")");
+            if(multiTouch) {
+                return true;
+            }
             if (distSqr(xDown, yDown, xMove, yMove) > LONG_CLICK_MOVE_THRESHOLD_SQR) {
                 return true;
             }
@@ -165,15 +171,19 @@ public class FretboardView extends View {
     }
 
     /**
-     * Stores x,y coordinates of last ACTION_[POINTER_]DOWN and of last ACTION_[POINTER_]UP in
+     * Stores x,y coordinates of last ACTION_DOWN and of last ACTION_UP in
      * xDown,yDown, respectively xUp,yUp for use by the OnClickListener and OnLongClickListener.
+     * <p>
+     * The moment there are more than one pointers down, any more moves are ignored, right up to
+     * (inclusive) the final ACTION_UP.
+     * </p>
      */
     private class MyOnTouchListener implements OnTouchListener {
+
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             switch (event.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                case MotionEvent.ACTION_POINTER_DOWN: {
+                case MotionEvent.ACTION_DOWN: {
                     int pointerIndex = event.getActionIndex();
                     xDown = event.getX(pointerIndex);
                     yDown = event.getY(pointerIndex);
@@ -184,8 +194,13 @@ public class FretboardView extends View {
                     baseNoteStart = baseNote;
                     break;
                 }
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_POINTER_UP: {
+                case MotionEvent.ACTION_POINTER_DOWN: {
+                    multiTouch = true;
+                    invalidate();
+                    break;
+                }
+                case MotionEvent.ACTION_UP: {
+                    multiTouch = false;
                     xyLongClick = null;
                     int pointerIndex = event.getActionIndex();
                     xUp = event.getX(pointerIndex);
@@ -196,14 +211,18 @@ public class FretboardView extends View {
                     }
                     deltaFret = 0;
                     deltaFretRounded = 0;
-                    if(!baseNoteStart.equals(baseNote)) {
-
-                    }
                     baseNoteStart = null;
                     invalidate();
                     break;
                 }
+                case MotionEvent.ACTION_POINTER_UP: {
+                    // noop
+                    break;
+                }
                 case MotionEvent.ACTION_MOVE:
+                    if(multiTouch) {
+                        break;
+                    }
                     int pointerIndex = event.getActionIndex();
                     xMove = event.getX(pointerIndex);
                     yMove = event.getY(pointerIndex);
@@ -291,7 +310,9 @@ public class FretboardView extends View {
         Log.i(TAG, "setScaleSelections(" + scaleSelections + ")");
         this.scaleSelections = scaleSelections;
     }
-
+    public void setAxisMarkersShow(Boolean axisMarkersShow) {
+        this.axisMarkersShow = axisMarkersShow;
+    }
     @Override
     public void invalidate() {
         Log.i(TAG, "invalidate()");
@@ -400,13 +421,9 @@ public class FretboardView extends View {
 
         drawFretNumbers(canvas, paintText);
 
-        drawAxisMarkers(canvas);
-
-//        if(xyLongClick!=null) {
-//            baseNote = Note.getLocalNames().get(deltaFretRounded);
-//            Scale.setBaseNotes(baseNote);
-//        }
-
+        if(axisMarkersShow) {
+            drawAxisMarkers(canvas);
+        }
         drawScales(canvas);
 
         ++drawCount;
@@ -585,9 +602,7 @@ public class FretboardView extends View {
             drawCenteredText(canvas, sdi.textPaint, note.getLocalName(), x, y);
             canvas.restore();
 
-//            if (xyLongClick!=null && distSqr(xy, xyLongClick) < sqrr) {
-//                Log.i(TAG, "long click on note " + note);
-            if (xyLongClick != null) {
+            if (xyLongClick != null && !multiTouch) {
                 float rr = r * (1 + paintLongClick.getStrokeWidth() / 2);
                 RectF rectClicked = rectFromCenterAndRadius(x, y, rr);
                 canvas.drawOval(rect, paintLongClick);

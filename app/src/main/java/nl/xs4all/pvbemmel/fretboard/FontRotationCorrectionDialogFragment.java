@@ -15,21 +15,17 @@ import java.util.Arrays;
  */
 public class FontRotationCorrectionDialogFragment extends DialogFragment {
 
-    public interface FontRotationListener {
-        public void handleFontRotationCorrection
-            (int fontRotationCorrection);
-    }
     private final static String TAG = FontRotationCorrectionDialogFragment.class.getSimpleName();
-    private final static ArrayList<Integer> validCorrections = new ArrayList<Integer>(Arrays.asList(
-        0, 90, 180, 270));
-    private final static String[] labels = new String[validCorrections.size()];
+    private final static ArrayList<Integer> availableCorrections = new ArrayList<Integer>(
+        Arrays.asList(0, 90, 180, 270));
+    private final static String[] labels = new String[availableCorrections.size()];
     static {
         for(int i=0; i<labels.length; ++i) {
-            labels[i] = ""+ validCorrections.get(i);
+            labels[i] = ""+ availableCorrections.get(i);
         }
     }
 
-    /** Font rotation correction, in degrees; must be one of <code>validCorrections</code>,
+    /** Font rotation correction, in degrees; must be one of <code>availableCorrections</code>,
      *  or -1 to indicate unassigned. */
     private int fontRotationCorrection = -1;
 
@@ -61,7 +57,7 @@ public class FontRotationCorrectionDialogFragment extends DialogFragment {
                 + "fontRotationCorrection: " + fontRotationCorrection;
             throw new IllegalStateException(msg);
         }
-        int selectedIndex = validCorrections.indexOf(fontRotationCorrection);
+        int selectedIndex = availableCorrections.indexOf(fontRotationCorrection);
         if(selectedIndex==-1) {
             throw new IllegalStateException("Not a valid font rotation correction: "
                 + fontRotationCorrection);
@@ -79,7 +75,7 @@ public class FontRotationCorrectionDialogFragment extends DialogFragment {
                 @Override
                 public void onClick(DialogInterface dialog, int id) {
                     ((MainActivity)getActivity()).handleFontRotationCorrection(
-                        validCorrections.get(selectionIndexArray[0]));
+                        availableCorrections.get(selectionIndexArray[0]));
                 }
             })
             .setNegativeButton(R.string.scales_select_cancel, new DialogInterface.OnClickListener() {
@@ -91,7 +87,6 @@ public class FontRotationCorrectionDialogFragment extends DialogFragment {
 
         return builder.create();
     }
-
     @Override
     public void onSaveInstanceState(Bundle outState) {
         Log.i(TAG, "onSaveInstanceState(" + outState + ")");

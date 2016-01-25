@@ -8,4 +8,11 @@
     <string name="scales_select_ok">OK</string>
     <string name="scales_select_cancel">Cancel</string>
     <string name="font_rotation_correction_title">Font rotation correction</string>
+    <string name="axis_markers_title">Show axis markers</string>
+    <string name="axis_markers_ok">OK</string>
+    <string name="axis_markers_cancel">Cancel</string>
+    <string name="showAxisMarkersText">"Shows 3 little squares:
+        Red at (0,0)
+        Green at (width,0)
+        Blue at (0,height)</string>"
 </resources>

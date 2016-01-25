@@ -17,9 +17,6 @@ import java.util.TreeMap;
  */
 public class ScalesDialogFragment extends DialogFragment {
 
-    public interface ScaleSelectionListener {
-        public void handleScaleSelections(TreeMap<String,Boolean> scaleSelections);
-    }
     private static final String TAG = ScalesDialogFragment.class.getSimpleName();
 
     private TreeMap<String,Boolean> scaleSelections;

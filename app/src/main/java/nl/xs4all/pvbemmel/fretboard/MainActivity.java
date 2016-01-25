@@ -23,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String SCALE_SELECTIONS_KEY = "scaleSelectionsKey";
     public static final String FONT_ROTATION_CORRECTION_KEY = "fontRotationCorrectionKey";
     public static final String BASE_NOTE_KEY = "baseToneKey";
+    public static final String AXIS_MARKERS_SHOW_KEY = "axisMarkerKey";
     private FretboardView fretboardView;
     private OrientationEventListener oel;
     private TreeMap<String,Boolean> scaleSelections;
@@ -30,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private Set<String> scaleSelectionNames;
     private Integer fontRotationCorrection;
     private String baseNote;
+    private Boolean axisMarkerShow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,12 +82,19 @@ public class MainActivity extends AppCompatActivity {
             baseNote = savedInstanceState.getString(BASE_NOTE_KEY, baseNote);
         }
         //-----------------------------------------------------------------------------------
+        axisMarkerShow = sharedPrefs.getBoolean(AXIS_MARKERS_SHOW_KEY, true);
+        if(savedInstanceState!=null) {
+            axisMarkerShow = savedInstanceState.getBoolean(AXIS_MARKERS_SHOW_KEY, axisMarkerShow);
+        }
+        //-----------------------------------------------------------------------------------
+
         setContentView(R.layout.activity_main);
 
         fretboardView = (FretboardView)findViewById(R.id.fretboard);
         fretboardView.setScaleSelections(scaleSelections);
         fretboardView.setFontRotationCorrection(fontRotationCorrection);
         fretboardView.setBaseNote(baseNote);
+        fretboardView.setAxisMarkersShow(axisMarkerShow);
 
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
@@ -117,6 +126,16 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "handleBaseNote(" + baseNote + ")");
         if(!this.baseNote.equals(baseNote)) {
             this.baseNote = baseNote;
+        }
+    }
+
+    public void handleAxisMarkersShow(Boolean axisMarkersShow) {
+        // is called from dialog
+        Log.i(TAG, "handleAxisMarkersShow(" + axisMarkersShow + ")");
+        if(this.axisMarkerShow != axisMarkersShow) {
+            this.axisMarkerShow = axisMarkersShow;
+            fretboardView.setAxisMarkersShow(axisMarkersShow);
+            fretboardView.invalidate();
         }
     }
 
@@ -175,6 +194,7 @@ public class MainActivity extends AppCompatActivity {
         bundle.putSerializable(SCALE_SELECTIONS_KEY, scaleSelections);
         bundle.putInt(FONT_ROTATION_CORRECTION_KEY, fontRotationCorrection);
         bundle.putString(BASE_NOTE_KEY, baseNote);
+        bundle.putBoolean(AXIS_MARKERS_SHOW_KEY, axisMarkerShow);
     }
 
     private void validateIsOnUIThread() {
@@ -200,9 +220,14 @@ public class MainActivity extends AppCompatActivity {
                 sdf.show(getSupportFragmentManager(), "scalesDialogTag");
                 return true;
             case R.id.font_rotation_correction_id:
-                FontRotationCorrectionDialogFragment frdf = FontRotationCorrectionDialogFragment.newInstance(
-                    fontRotationCorrection);
+                FontRotationCorrectionDialogFragment frdf = FontRotationCorrectionDialogFragment.
+                    newInstance(fontRotationCorrection);
                 frdf.show(getSupportFragmentManager(), "fontRotationCorrectionDialogTag");
+                return true;
+            case R.id.axis_markers_id:
+                AxisMarkersDialogFragment amdf = AxisMarkersDialogFragment.newInstance(
+                    axisMarkerShow);
+                amdf.show(getSupportFragmentManager(), "axisMarkersDialogTag");
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -243,8 +268,9 @@ public class MainActivity extends AppCompatActivity {
 
         editor.putString(BASE_NOTE_KEY, baseNote);
 
-        editor.commit();
+        editor.putBoolean(AXIS_MARKERS_SHOW_KEY, axisMarkerShow);
 
+        editor.commit();
     }
 
 }
